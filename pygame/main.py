@@ -1,3 +1,5 @@
+import asyncio
+
 import pygame
 
 import time
@@ -9,7 +11,7 @@ pygame.font.init()
 WIN_WIDTH = 500
 WIN_HEIGHT = 800
 
-ASSETS_DIR = pathlib.Path(__file__).parent / "assets"
+ASSETS_DIR = pathlib.Path(__file__).parents[1] / "assets"
 
 
 def _load_image(img_path: pathlib.Path) -> pygame.Surface:
@@ -23,6 +25,11 @@ BG_IMG = _load_image(ASSETS_DIR / "bg.png")
 
 STAT_FONT = pygame.font.SysFont("arial", 50)
 
+WHITE = (255, 255, 255)
+
+BASE_X = 730
+PIPE_X = 600
+
 
 class Bird:
     IMGS = BIRD_IMGS
@@ -35,13 +42,13 @@ class Bird:
         self.y = y
         self.tilt = 0
         self.tick_count = 0
-        self.vel = 0
+        self.velocity = 0
         self.height = self.y
         self.img_count = 0
         self.img = self.IMGS[0]
 
     def jump(self):
-        self.vel = -9.5
+        self.velocity = -9.5
         self.tick_count = 0  # when we last jumped
         self.height = self.y
 
@@ -50,7 +57,7 @@ class Bird:
 
         # displacement
         # d = v*t + 3/2*t^2
-        d = self.vel * self.tick_count + 1.5 * self.tick_count**2
+        d = self.velocity * self.tick_count + 1.5 * self.tick_count**2
 
         # naive "terminal velocity"
         if d >= 16:
@@ -184,7 +191,7 @@ def draw_window(
     for pipe in pipes:
         pipe.draw(win)
 
-    text = STAT_FONT.render(f"Score: {score}", 1, (255, 255, 255))
+    text = STAT_FONT.render(f"Score: {score}", 1, WHITE)
     win.blit(text, (WIN_WIDTH - 10 - text.get_width(), 10))
 
     # win.blitting base and bird.
@@ -200,13 +207,10 @@ def game_over():
     quit()
 
 
-def main():
-    base_x = 730
-    pipe_x = 600
-
+async def main():
     bird = Bird(x=230, y=350)
-    base = Base(base_x)
-    pipes = [Pipe(pipe_x)]
+    base = Base(BASE_X)
+    pipes = [Pipe(PIPE_X)]
 
     score = 0
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
@@ -233,7 +237,7 @@ def main():
             if pipe.x + pipe.PIPE_TOP.get_width() < 0:
                 # pipe is out of the game window
                 pipes.remove(pipe)
-                pipes.append(Pipe(pipe_x))
+                pipes.append(Pipe(PIPE_X))
 
             if pipe.x < bird.x and not pipe.passed:
                 pipe.passed = True
@@ -243,7 +247,7 @@ def main():
             pipe.move()
 
         # Bird hit the floor.
-        if bird.y + bird.img.get_height() >= base_x:
+        if bird.y + bird.img.get_height() >= BASE_X:
             game_over()
 
         base.move()
@@ -253,5 +257,4 @@ def main():
     pygame.quit()
 
 
-if __name__ == "__main__":
-    main()
+asyncio.run(main())
